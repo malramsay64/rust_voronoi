@@ -1,5 +1,5 @@
 use ordered_float::OrderedFloat;
-use rand::{random, Rand, Rng};
+use rand::Rng;
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, Mul, Sub};
@@ -31,18 +31,16 @@ impl Point {
     pub fn y(&self) -> f64 {
         self.y.into_inner()
     }
+
+    /// Generate a point with random position
+    pub fn rand<R: Rng>(rng: &mut R) -> Point {
+        Point::new(rng.gen(), rng.gen())
+    }
 }
 
 impl fmt::Debug for Point {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "({0:.1}, {1:.1})", self.x(), self.y())
-    }
-}
-
-#[allow(unused_variables)]
-impl Rand for Point {
-    fn rand<R: Rng>(rng: &mut R) -> Point {
-        Point::new(random::<f64>(), random::<f64>())
     }
 }
 
