@@ -1,6 +1,6 @@
-use std::fmt;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::fmt;
 
 use fnv::FnvHashSet;
 
@@ -9,14 +9,23 @@ use point::Point;
 #[derive(Clone)]
 pub enum Event {
     Site(Point),
-    Circle(Point /* center */, f64 /* radius */, usize /* index of disappearing arc */, usize /* id */),
+    Circle(
+        Point, /* center */
+        f64,   /* radius */
+        usize, /* index of disappearing arc */
+        usize, /* id */
+    ),
 }
 
 impl fmt::Debug for Event {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Event::Site(pt) => { write!(f, "Site at {:?}", pt) },
-            Event::Circle(center, radius, leaf, _) => { write!(f, "Circle for leaf {}, center {:?}, radius {:?}", leaf, center, radius) },
+            Event::Site(pt) => write!(f, "Site at {:?}", pt),
+            Event::Circle(center, radius, leaf, _) => write!(
+                f,
+                "Circle for leaf {}, center {:?}, radius {:?}",
+                leaf, center, radius
+            ),
         }
     }
 }

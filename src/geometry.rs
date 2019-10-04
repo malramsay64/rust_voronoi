@@ -1,6 +1,6 @@
+use beachline::BreakPoint;
 use ordered_float::OrderedFloat;
 use point::Point;
-use beachline::BreakPoint;
 
 type TripleSite = (Point, Point, Point);
 
@@ -13,7 +13,9 @@ pub fn segment_intersection(seg1: Segment, seg2: Segment) -> Option<Point> {
     let s = seg2[1] - c;
 
     let denom = r.cross(s);
-    if denom == 0.0 { return None; }
+    if denom == 0.0 {
+        return None;
+    }
 
     let numer_a = (c - a).cross(s);
     let numer_c = (c - a).cross(r);
@@ -21,14 +23,18 @@ pub fn segment_intersection(seg1: Segment, seg2: Segment) -> Option<Point> {
     let t = numer_a / denom;
     let u = numer_c / denom;
 
-    if t < 0.0 || t > 1.0 || u < 0.0 || u > 1.0 { return None; }
+    if t < 0.0 || t > 1.0 || u < 0.0 || u > 1.0 {
+        return None;
+    }
 
     return Some(a + r * t);
 }
 
 pub fn circle_bottom(triple_site: TripleSite) -> Option<OrderedFloat<f64>> {
     let circle_center = circle_center(triple_site);
-    if let None = circle_center { return None; }
+    if let None = circle_center {
+        return None;
+    }
     let circle_center = circle_center.unwrap();
 
     let (_, _, p3) = triple_site;
@@ -61,9 +67,10 @@ pub fn circle_center(triple_site: TripleSite) -> Option<Point> {
     let numer = c1 * a2 - c2 * a1;
     let denom = b1 * a2 - b2 * a1;
 
-    if denom == 0.0 { return None; }
+    if denom == 0.0 {
+        return None;
+    }
     let y_cen = numer / denom;
-
 
     let x_cen = if a2 != 0.0 {
         (c2 - b2 * y_cen) / a2
@@ -131,19 +138,31 @@ mod tests {
 
     #[test]
     fn simple_circle_center() {
-        let circle_triple = (Point::new(-1.0, 0.0), Point::new(0.0, 1.0), Point::new(1.0, 0.0));
+        let circle_triple = (
+            Point::new(-1.0, 0.0),
+            Point::new(0.0, 1.0),
+            Point::new(1.0, 0.0),
+        );
         assert_eq!(circle_center(circle_triple).unwrap(), Point::new(0.0, 0.0));
     }
 
     #[test]
     fn simple_circle_bottom() {
-        let circle_triple = (Point::new(-1.0, 0.0), Point::new(0.0, 1.0), Point::new(1.0, 0.0));
+        let circle_triple = (
+            Point::new(-1.0, 0.0),
+            Point::new(0.0, 1.0),
+            Point::new(1.0, 0.0),
+        );
         assert_eq!(circle_bottom(circle_triple).unwrap(), OrderedFloat(-1.0));
     }
 
     #[test]
     fn degenerate_circle() {
-        let circle_triple = (Point::new(-1.0, 0.0), Point::new(1.0, 0.0), Point::new(0.0, 0.0));
+        let circle_triple = (
+            Point::new(-1.0, 0.0),
+            Point::new(1.0, 0.0),
+            Point::new(0.0, 0.0),
+        );
         assert_eq!(circle_bottom(circle_triple), None);
     }
 
@@ -151,14 +170,20 @@ mod tests {
     fn simple_segments_intersect() {
         let line1 = [Point::new(-1.0, 0.0), Point::new(1.0, 0.0)];
         let line2 = [Point::new(0.0, -1.0), Point::new(0.0, 1.0)];
-        assert_eq!(segment_intersection(line1, line2), Some(Point::new(0.0, 0.0)));
+        assert_eq!(
+            segment_intersection(line1, line2),
+            Some(Point::new(0.0, 0.0))
+        );
     }
 
     #[test]
     fn tee_segments_intersect() {
         let line1 = [Point::new(-1.0, 0.0), Point::new(1.0, 0.0)];
         let line2 = [Point::new(0.0, 0.0), Point::new(0.0, 1.0)];
-        assert_eq!(segment_intersection(line1, line2), Some(Point::new(0.0, 0.0)));
+        assert_eq!(
+            segment_intersection(line1, line2),
+            Some(Point::new(0.0, 0.0))
+        );
     }
 
     #[test]

@@ -1,8 +1,8 @@
-use rand::{Rand, Rng, random};
-use std::ops::{Sub, Mul, Add};
-use std::fmt;
 use ordered_float::OrderedFloat;
+use rand::{random, Rand, Rng};
 use std::cmp::Ordering;
+use std::fmt;
+use std::ops::{Add, Mul, Sub};
 
 /// A point in two dimensions
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -10,13 +10,16 @@ pub struct Point {
     /// x coordinate
     pub x: OrderedFloat<f64>,
     /// y coordinate
-    pub y: OrderedFloat<f64>
+    pub y: OrderedFloat<f64>,
 }
 
 impl Point {
     /// Constructs a new `Point`.
     pub fn new(x: f64, y: f64) -> Self {
-        Point {x: OrderedFloat::<f64>(x), y: OrderedFloat::<f64>(y)}
+        Point {
+            x: OrderedFloat::<f64>(x),
+            y: OrderedFloat::<f64>(y),
+        }
     }
 
     /// Getter for the x coordinate.
@@ -87,11 +90,18 @@ impl PartialOrd for Point {
 
 impl Ord for Point {
     fn cmp(&self, other: &Point) -> Ordering {
-        if self.y > other.y { return Ordering::Greater; }
-        else if self.y == other.y {
-            if self.x < other.x { return Ordering::Greater; }
-            else if self.x == other.x { return Ordering::Equal; }
-            else { return Ordering::Less; }
-        } else { return Ordering::Less; }
+        if self.y > other.y {
+            return Ordering::Greater;
+        } else if self.y == other.y {
+            if self.x < other.x {
+                return Ordering::Greater;
+            } else if self.x == other.x {
+                return Ordering::Equal;
+            } else {
+                return Ordering::Less;
+            }
+        } else {
+            return Ordering::Less;
+        }
     }
 }

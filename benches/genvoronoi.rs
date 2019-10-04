@@ -1,14 +1,13 @@
 #![feature(test)]
 
-extern crate test;
 extern crate rand;
+extern crate test;
 extern crate voronoi;
 
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use voronoi::{voronoi, Point};
 
 const BOX_SIZE: f64 = 800.;
-
 
 #[cfg(test)]
 mod tests {
@@ -20,7 +19,10 @@ mod tests {
         let mut rng = thread_rng();
 
         for _ in 0..count {
-            vec.push(Point::new(rng.next_f64() * BOX_SIZE, rng.next_f64() * BOX_SIZE));
+            vec.push(Point::new(
+                rng.next_f64() * BOX_SIZE,
+                rng.next_f64() * BOX_SIZE,
+            ));
         }
 
         vec
@@ -43,7 +45,6 @@ mod tests {
             voronoi(points.clone(), BOX_SIZE);
         });
     }
-
 
     #[bench]
     fn bench_10000_points(b: &mut Bencher) {
