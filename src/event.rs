@@ -1,10 +1,11 @@
+use fnv::FnvHashSet;
+use log::info;
+
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::fmt;
 
-use fnv::FnvHashSet;
-
-use point::Point;
+use crate::point::Point;
 
 #[derive(Clone)]
 pub enum Event {

@@ -1,8 +1,10 @@
-use beachline::*;
-use dcel::{add_faces, add_line, Vertex, DCEL};
-use event::*;
-use geometry::*;
-use point::Point;
+use log::trace;
+
+use crate::beachline::*;
+use crate::dcel::{add_faces, add_line, Vertex, DCEL};
+use crate::event::*;
+use crate::geometry::*;
+use crate::point::Point;
 
 type TripleSite = (Point, Point, Point);
 

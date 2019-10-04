@@ -1,6 +1,9 @@
-use geometry::{segment_intersection, Segment};
-use point::Point;
+use log::info;
+
 use std::fmt;
+
+use crate::geometry::{segment_intersection, Segment};
+use crate::point::Point;
 
 const NIL: usize = !0;
 

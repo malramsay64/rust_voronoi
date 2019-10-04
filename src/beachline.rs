@@ -1,5 +1,5 @@
-use geometry::get_breakpoint_x;
-use point::Point;
+use crate::geometry::get_breakpoint_x;
+use crate::point::Point;
 use std::fmt;
 
 const NIL: usize = !0;
