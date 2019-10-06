@@ -88,18 +88,7 @@ impl PartialOrd for Point {
 
 impl Ord for Point {
     fn cmp(&self, other: &Point) -> Ordering {
-        if self.y > other.y {
-            return Ordering::Greater;
-        } else if self.y == other.y {
-            if self.x < other.x {
-                return Ordering::Greater;
-            } else if self.x == other.x {
-                return Ordering::Equal;
-            } else {
-                return Ordering::Less;
-            }
-        } else {
-            return Ordering::Less;
-        }
+        // Use reverse of x to break ties with y
+        self.y.cmp(&other.y).then(self.x.cmp(&other.x).reverse())
     }
 }
