@@ -17,6 +17,7 @@ extern crate ordered_float;
 extern crate rand;
 
 mod beachline;
+mod cell;
 mod dcel;
 mod event;
 mod geometry;
@@ -24,7 +25,8 @@ mod lloyd;
 mod point;
 mod voronoi;
 
-pub use dcel::{make_line_segments, make_polygons, DCEL};
-pub use lloyd::{lloyd_relaxation, polygon_centroid};
-pub use point::Point;
-pub use voronoi::voronoi;
+pub use crate::cell::Cell;
+pub use crate::dcel::{make_line_segments, make_polygons, DCEL};
+pub use crate::lloyd::{lloyd_relaxation, polygon_centroid};
+pub use crate::point::Point;
+pub use crate::voronoi::voronoi;

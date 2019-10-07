@@ -1,6 +1,7 @@
 use log::trace;
 
 use crate::beachline::*;
+use crate::cell::Cell;
 use crate::dcel::{add_faces, add_line, Vertex, DCEL};
 use crate::event::*;
 use crate::geometry::*;
@@ -10,7 +11,7 @@ type TripleSite = (Point, Point, Point);
 
 /// Computes the Voronoi diagram of a set of points.
 /// Returns a Doubly Connected Edge List.
-pub fn voronoi(points: Vec<Point>, boxsize: f64) -> DCEL {
+pub fn voronoi(points: Vec<Point>, boxsize: &Cell) -> DCEL {
     trace!("Starting Voronoi Computation");
     let mut event_queue = EventQueue::new();
     let mut beachline = BeachLine::new();
@@ -310,40 +311,21 @@ fn handle_circle_event(
     }
 }
 
-fn outside_bb(pt: Point, box_size: f64) -> bool {
-    let delta = 0.1;
-    pt.x() < 0. - delta
-        || pt.x() > box_size + delta
-        || pt.y() < 0. - delta
-        || pt.y() > box_size + delta
-}
-
-fn add_bounding_box(boxsize: f64, beachline: &BeachLine, dcel: &mut DCEL) {
+fn add_bounding_box(points: &Cell, beachline: &BeachLine, dcel: &mut DCEL) {
     extend_edges(beachline, dcel);
 
-    let delta = 50.;
-    let bb_top = [Point::new(0. - delta, 0.), Point::new(boxsize + delta, 0.)];
-    let bb_bottom = [
-        Point::new(0. - delta, boxsize),
-        Point::new(boxsize + delta, boxsize),
-    ];
-    let bb_left = [Point::new(0., 0. - delta), Point::new(0., boxsize + delta)];
-    let bb_right = [
-        Point::new(boxsize, 0. - delta),
-        Point::new(boxsize, boxsize + delta),
-    ];
-
-    add_line(bb_top, dcel);
-    add_line(bb_right, dcel);
-    add_line(bb_left, dcel);
-    add_line(bb_bottom, dcel);
+    add_line(points.top(), dcel);
+    add_line(points.bottom(), dcel);
+    add_line(points.left(), dcel);
+    add_line(points.right(), dcel);
 
     dcel.set_prev();
 
     for vert in 0..dcel.vertices.len() {
         let this_pt = dcel.vertices[vert].coordinates;
-        if outside_bb(this_pt, boxsize) {
+        if !points.contains(&this_pt) {
             dcel.remove_vertex(vert);
+        } else {
         }
     }
 }
@@ -391,7 +373,7 @@ fn extend_edges(beachline: &BeachLine, dcel: &mut DCEL) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dcel::make_polygons;
+    use crate::dcel::make_polygons;
 
     #[test]
     fn readme_example() {
@@ -400,7 +382,7 @@ mod tests {
             Point::new(2.0, 3.0),
             Point::new(10.0, 12.0),
         ];
-        let vor_diagram = voronoi(vor_pts, 800.);
+        let vor_diagram = voronoi(vor_pts, &Cell::new(800.));
         let vor_polys = make_polygons(&vor_diagram);
         assert_eq!(vor_polys.len(), 3);
     }
@@ -414,7 +396,7 @@ mod tests {
             Point::new(30.0, 1.0),
         ];
         let num_pts = vor_pts.len();
-        let vor_diagram = voronoi(vor_pts, 800.);
+        let vor_diagram = voronoi(vor_pts, &Cell::new(800.));
         let vor_polys = make_polygons(&vor_diagram);
         assert_eq!(vor_polys.len(), num_pts);
     }
@@ -428,7 +410,7 @@ mod tests {
             Point::new(1.0, 40.0),
         ];
         let num_pts = vor_pts.len();
-        let vor_diagram = voronoi(vor_pts, 800.);
+        let vor_diagram = voronoi(vor_pts, &Cell::new(800.));
         let vor_polys = make_polygons(&vor_diagram);
         assert_eq!(vor_polys.len(), num_pts);
     }
