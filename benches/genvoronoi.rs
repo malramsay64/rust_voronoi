@@ -1,57 +1,30 @@
-#![feature(test)]
+use rand::prelude::*;
+use voronoi::{voronoi, Cell, Point};
 
-extern crate rand;
-extern crate test;
-extern crate voronoi;
-
-use rand::{thread_rng, Rng};
-use voronoi::{voronoi, Point};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
 const BOX_SIZE: f64 = 800.;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
+fn generate_points(count: usize) -> Vec<Point> {
+    let mut rng = thread_rng();
 
-    fn generate_points(count: usize) -> Vec<Point> {
-        let mut vec = Vec::with_capacity(count);
-        let mut rng = thread_rng();
+    (0..count)
+        .map(|_| Point::rand(&mut rng) * BOX_SIZE)
+        .collect()
+}
 
-        for _ in 0..count {
-            vec.push(Point::new(
-                rng.next_f64() * BOX_SIZE,
-                rng.next_f64() * BOX_SIZE,
-            ));
-        }
+fn bench_voronoi(c: &mut Criterion) {
+    let cell = Cell::new(BOX_SIZE);
+    let mut group = c.benchmark_group("points");
 
-        vec
-    }
-
-    #[bench]
-    fn bench_1_point(b: &mut Bencher) {
-        let points = vec![Point::new(0.0, 1.0)];
-
-        b.iter(|| {
-            voronoi(points.clone(), BOX_SIZE);
-        });
-    }
-
-    #[bench]
-    fn bench_100_points(b: &mut Bencher) {
-        let points = generate_points(100);
-
-        b.iter(|| {
-            voronoi(points.clone(), BOX_SIZE);
-        });
-    }
-
-    #[bench]
-    fn bench_10000_points(b: &mut Bencher) {
-        let points = generate_points(10000);
-
-        b.iter(|| {
-            voronoi(points.clone(), BOX_SIZE);
-        });
+    for &num_points in [1, 100, 1000].iter() {
+        group.bench_with_input(
+            BenchmarkId::from_parameter(num_points),
+            &generate_points(num_points),
+            |b, points| b.iter(|| voronoi(points.clone(), &cell)),
+        );
     }
 }
+
+criterion_group!(benches, bench_voronoi);
+criterion_main!(benches);
