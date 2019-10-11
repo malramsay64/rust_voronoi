@@ -132,6 +132,16 @@ pub fn get_breakpoint_y(bp: &BreakPoint, yl: f64) -> f64 {
     return numer / denom + (py + yl) / 2.;
 }
 
+pub(crate) fn polygon_area(polygon: &Vec<Point>) -> f64 {
+    polygon
+        .iter()
+        .zip(polygon.iter().cycle().skip(1))
+        .map(|(curr, next)| (next.x() + curr.x()) * (next.y() - curr.y()))
+        .sum::<f64>()
+        .abs()
+        / 2.
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

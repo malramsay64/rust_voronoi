@@ -372,6 +372,10 @@ fn extend_edges(beachline: &BeachLine, dcel: &mut DCEL) {
 mod tests {
     use super::*;
     use crate::dcel::make_polygons;
+    use crate::geometry::polygon_area;
+    use approx::assert_abs_diff_eq;
+    use proptest::proptest;
+    use std::convert::TryFrom;
 
     #[test]
     fn readme_example() {
@@ -411,5 +415,36 @@ mod tests {
         let vor_diagram = voronoi(vor_pts, &Cell::new(800.));
         let vor_polys = make_polygons(&vor_diagram);
         assert_eq!(vor_polys.len(), num_pts);
+    }
+
+    #[test]
+    fn triangle_bounds() {
+        let points = vec![Point::new(0., 0.), Point::new(1., 0.), Point::new(0.5, 1.)];
+        let cell = Cell::try_from(points).unwrap();
+        let vor_points = vec![Point::new(0.5, 0.5)];
+        let vor_diagram = voronoi(vor_points.clone(), &cell);
+        let vor_polys = make_polygons(&vor_diagram);
+        assert_eq!(vor_polys.len(), vor_points.len());
+        let voronoi_area: f64 = vor_polys.iter().map(polygon_area).sum();
+        assert_eq!(voronoi_area, cell.area());
+    }
+
+    proptest! {
+        #[test]
+        fn area_test(x in proptest::collection::vec(0_f64..1_f64, 100), y in proptest::collection::vec(0_f64..1f64, 100)) {
+            let cell = Cell::new(1.);
+            let points: Vec<Point>= x.iter().zip(y.iter()).map(|(&x, &y)| Point::new(x, y)).collect();
+
+            for point in points.iter() {
+                assert!(cell.contains(point))
+            }
+
+            let vor_diagram = voronoi(points.clone(), &cell);
+            let vor_polys = make_polygons(&vor_diagram);
+            assert_eq!(vor_polys.len(), points.len());
+
+            let voronoi_area: f64 = vor_polys.iter().map(polygon_area).sum();
+            assert_abs_diff_eq!(voronoi_area, cell.area(), epsilon = 4.*std::f64::EPSILON);
+        }
     }
 }
