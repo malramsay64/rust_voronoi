@@ -311,21 +311,19 @@ fn handle_circle_event(
     }
 }
 
-fn add_bounding_box(points: &Cell, beachline: &BeachLine, dcel: &mut DCEL) {
+fn add_bounding_box(boundary: &Cell, beachline: &BeachLine, dcel: &mut DCEL) {
     extend_edges(beachline, dcel);
 
-    add_line(points.top(), dcel);
-    add_line(points.bottom(), dcel);
-    add_line(points.left(), dcel);
-    add_line(points.right(), dcel);
+    for (&p0, &p1) in boundary.sides() {
+        add_line([p0, p1], dcel);
+    }
 
     dcel.set_prev();
 
     for vert in 0..dcel.vertices.len() {
         let this_pt = dcel.vertices[vert].coordinates;
-        if !points.contains(&this_pt) {
+        if !boundary.contains(&this_pt) {
             dcel.remove_vertex(vert);
-        } else {
         }
     }
 }

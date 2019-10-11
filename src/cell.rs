@@ -5,19 +5,29 @@
 //
 
 use crate::Point;
+use anyhow::anyhow;
 use std::cmp::Ordering;
+use std::convert::TryFrom;
 
 /// Define the bounding box for the voronoi diagram
 ///
 /// This specifies the corners of the voronoi cell.
 #[derive(Debug, Clone)]
 pub struct Cell {
-    boundary: [Point; 4],
+    boundary: Vec<Point>,
 }
 
-impl From<[Point; 4]> for Cell {
-    fn from(boundary: [Point; 4]) -> Cell {
-        Cell { boundary }
+impl TryFrom<Vec<Point>> for Cell {
+    type Error = anyhow::Error;
+    fn try_from(boundary: Vec<Point>) -> Result<Cell, Self::Error> {
+        if boundary.len() < 3 {
+            return Err(anyhow!(
+                "Not enough points for a contained shape, found {} require 3",
+                boundary.len()
+            ));
+        }
+
+        Ok(Cell { boundary })
     }
 }
 
@@ -34,7 +44,7 @@ impl Cell {
     ///
     pub fn new(boxsize: f64) -> Cell {
         Cell {
-            boundary: [
+            boundary: vec![
                 Point::new(0., 0.),
                 Point::new(boxsize, 0.),
                 Point::new(boxsize, boxsize),
@@ -43,29 +53,24 @@ impl Cell {
         }
     }
 
-    pub(crate) fn top(&self) -> [Point; 2] {
-        [self.boundary[2], self.boundary[3]]
+    pub(crate) fn sides(&self) -> impl Iterator<Item = (&Point, &Point)> {
+        self.boundary
+            .iter()
+            .zip(self.boundary.iter().cycle().skip(1))
     }
 
-    pub(crate) fn bottom(&self) -> [Point; 2] {
-        [self.boundary[0], self.boundary[1]]
-    }
-
-    pub(crate) fn left(&self) -> [Point; 2] {
-        [self.boundary[3], self.boundary[0]]
-    }
-
-    pub(crate) fn right(&self) -> [Point; 2] {
-        [self.boundary[1], self.boundary[2]]
+    /// Find the area of the cell
+    pub(crate) fn area(&self) -> f64 {
+        self.sides()
+            .map(|(curr, next)| (next.x() + curr.x()) * (next.y() - curr.y()))
+            .sum::<f64>()
+            .abs()
+            / 2.
     }
 
     pub(crate) fn contains(&self, point: &Point) -> bool {
         let mut acc = 0;
-        for (v0, v1) in self
-            .boundary
-            .iter()
-            .zip(self.boundary.iter().cycle().skip(1))
-        {
+        for (v0, v1) in self.sides() {
             // Check whether point overlaps the line
             match (v0.y.cmp(&point.y), point.y.cmp(&v1.y)) {
                 // The line has an upwards direction
