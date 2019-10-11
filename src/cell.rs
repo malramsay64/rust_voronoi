@@ -5,42 +5,7 @@
 //
 
 use crate::Point;
-
-fn intersect_point(point: &Point, start: &Point, finish: &Point) -> bool {
-    // This compares the squared distance of a point to the start and finish,
-    // with the distance from the start to the finish
-
-    let d_ps_2 = (point.x() - start.x()).powi(2) + (point.y() - start.y()).powi(2);
-    let d_pf_2 = (point.x() - finish.x()).powi(2) + (point.y() - finish.y()).powi(2);
-    let d_sf_2 = (start.x() - finish.x()).powi(2) + (start.y() - finish.y()).powi(2);
-
-    d_ps_2.sqrt() + d_pf_2.sqrt() - d_sf_2.sqrt() < 2. * std::f64::EPSILON
-}
-
-fn intersects(s1: &Point, f1: &Point, s2: &Point, f2: &Point) -> bool {
-    // Also see below links for other implementations of this algorithm
-    // - https://github.com/georust/geo/blob/96c7846d703a74f59ba68e68929415cbce4a68d9/geo/src/algorithm/intersects.rs#L142
-    // - https://github.com/brandonxiang/geojson-python-utils/blob/33b4c00c6cf27921fb296052d0c0341bd6ca1af2/geojson_utils.py
-    // - http://www.kevlindev.com/gui/math/intersection/Intersection.js
-    //
-    let u_b = (f2.y() - s2.y()) * (f1.x() - s1.x()) - (f2.x() - s2.x()) * (f1.y() - s1.y());
-    // Where u_b == 0 the two lines are parallel. In this case we don't need any further checks
-    // since we are only concerned with lines that cross, parallel is fine.
-    if u_b == 0. {
-        return false;
-    }
-
-    let ua_t = (f2.x() - s2.x()) * (s1.y() - s2.y()) - (f2.y() - s2.y()) * (s1.x() - s2.x());
-    let ub_t = (f1.x() - s1.x()) * (s1.y() - s2.y()) - (f1.y() - s1.y()) * (s1.x() - s2.x());
-
-    let ua = ua_t / u_b;
-    let ub = ub_t / u_b;
-    // Should the points ua, ub both lie on the interval [0, 1] the lines intersect.
-    if 0. <= ua && ua <= 1. && 0. <= ub && ub <= 1. {
-        return true;
-    }
-    false
-}
+use std::cmp::Ordering;
 
 /// Define the bounding box for the voronoi diagram
 ///
@@ -54,6 +19,11 @@ impl From<[Point; 4]> for Cell {
     fn from(boundary: [Point; 4]) -> Cell {
         Cell { boundary }
     }
+}
+
+#[inline]
+fn point_to_line(p: &Point, l0: &Point, l1: &Point) -> Option<Ordering> {
+    ((l1.x() - l0.x()) * (p.y() - l0.y()) - (p.x() - l0.x()) * (l1.y() - l0.y())).partial_cmp(&0.)
 }
 
 impl Cell {
@@ -90,24 +60,46 @@ impl Cell {
     }
 
     pub(crate) fn contains(&self, point: &Point) -> bool {
-        // If the point is the same as a boundary it is contained
-        if self.boundary.iter().any(|x| x == point) {
-            return true;
-        }
-        // If the point lies on the right boundary then we include it
-        if [self.top(), self.bottom(), self.left(), self.right()]
+        let mut acc = 0;
+        for (v0, v1) in self
+            .boundary
             .iter()
-            .map(|l| intersect_point(point, &l[0], &l[1]))
-            .any(|b| b)
+            .zip(self.boundary.iter().cycle().skip(1))
         {
-            return true;
+            // Check whether point overlaps the line
+            match (v0.y.cmp(&point.y), point.y.cmp(&v1.y)) {
+                // The line has an upwards direction
+                // start <= point <= end
+                (Ordering::Less, Ordering::Less)
+                | (Ordering::Equal, Ordering::Less)
+                | (Ordering::Less, Ordering::Equal) => match point_to_line(point, v0, v1) {
+                    // The point is on the
+                    Some(Ordering::Less) => acc += 1,
+                    // The point is on the line so exit early
+                    Some(Ordering::Equal) => return true,
+                    Some(Ordering::Greater) => {}
+                    // There are values which can't be compared (NaN, Inf) so the point is not
+                    // contained
+                    None => return false,
+                },
+                // The line has a downwards direction
+                // start >= point >= end
+                (Ordering::Greater, Ordering::Greater)
+                | (Ordering::Greater, Ordering::Equal)
+                | (Ordering::Equal, Ordering::Greater) => match point_to_line(point, v0, v1) {
+                    // The point is on the right, which is the left since this line is going down
+                    Some(Ordering::Greater) => acc -= 1,
+                    // The point is on the line so exit early
+                    Some(Ordering::Equal) => return true,
+                    Some(Ordering::Less) => {}
+                    // There are values which can't be compared (NaN, Inf) so the point is not
+                    // contained
+                    None => return false,
+                },
+                _ => {}
+            }
         }
-        let intersections = [self.top(), self.bottom(), self.left(), self.right()]
-            .iter()
-            .map(|l| intersects(point, &(self.boundary[2] + self.boundary[1]), &l[0], &l[1]))
-            .filter(|&b| b)
-            .count();
-        intersections % 2 == 1
+        acc % 2 != 0
     }
 }
 
@@ -115,35 +107,7 @@ impl Cell {
 mod tests {
     use super::*;
 
-    #[test]
-    fn intersect_start() {
-        assert!(intersects(
-            &Point::new(0., 0.),
-            &Point::new(1., 0.),
-            &Point::new(0., 0.),
-            &Point::new(0., 1.)
-        ))
-    }
-
-    #[test]
-    fn intersect_middle_y() {
-        assert!(intersects(
-            &Point::new(0., 0.),
-            &Point::new(0., 1.),
-            &Point::new(0., 0.5),
-            &Point::new(1., 0.5)
-        ))
-    }
-
-    #[test]
-    fn intersect_middle_800() {
-        assert!(intersects(
-            &Point::new(801., 0.),
-            &Point::new(801., 800.),
-            &Point::new(800., 15.0),
-            &Point::new(810., 15.0)
-        ))
-    }
+    use proptest::proptest;
 
     #[test]
     fn containment_simple() {
@@ -177,5 +141,29 @@ mod tests {
         let cell = Cell::new(10.);
         assert!(!cell.contains(&Point::new(1., -5.)));
         assert!(!cell.contains(&Point::new(10., -5.)));
+    }
+
+    proptest! {
+        #[test]
+        fn rand_containment(x in 0_f64..1_f64, y in 0_f64..1_f64) {
+            let cell = Cell::new(1.);
+            assert!(cell.contains(&Point::new(x, y)));
+        }
+    }
+    proptest! {
+        #[test]
+        fn rand_containment_false(x in 0_f64..1_f64, y in 0_f64..1_f64) {
+            let cell = Cell::new(1.-std::f64::EPSILON);
+            assert!(!cell.contains(&Point::new(x-1., y-1.)));
+            assert!(!cell.contains(&Point::new(x, y-1.)));
+            assert!(!cell.contains(&Point::new(x+1., y-1.)));
+
+            assert!(!cell.contains(&Point::new(x-1., y)));
+            assert!(!cell.contains(&Point::new(x+1., y)));
+
+            assert!(!cell.contains(&Point::new(x-1., y+1.)));
+            assert!(!cell.contains(&Point::new(x, y+1.)));
+            assert!(!cell.contains(&Point::new(x+1., y+1.)));
+        }
     }
 }
