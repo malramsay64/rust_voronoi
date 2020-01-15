@@ -18,7 +18,7 @@ pub fn voronoi(points: Vec<Point>, boxsize: &Cell) -> DCEL {
     for pt in points {
         event_queue.push(Event::Site { 0: pt });
     }
-    let mut result = DCEL::new();
+    let mut result = DCEL::default();
 
     while let Some(this_event) = event_queue.pop() {
         trace!("\n\n");
@@ -37,7 +37,7 @@ pub fn voronoi(points: Vec<Point>, boxsize: &Cell) -> DCEL {
     }
     add_bounding_box(boxsize, &beachline, &mut result);
     add_faces(&mut result);
-    return result;
+    result
 }
 
 fn handle_site_event(
@@ -69,7 +69,7 @@ fn handle_site_event(
         );
         if breakpoints_converge(left_triple) {
             trace!("Found converging triple");
-            let left_arc = beachline.get_left_arc(Some(new_node)).unwrap();
+            let left_arc = beachline.get_left_arc(new_node).unwrap();
             make_circle_event(left_arc, left_triple, queue, beachline);
         }
     }
@@ -82,7 +82,7 @@ fn handle_site_event(
         );
         if breakpoints_converge(right_triple) {
             trace!("Found converging triple");
-            let right_arc = beachline.get_right_arc(Some(new_node)).unwrap();
+            let right_arc = beachline.get_right_arc(new_node).unwrap();
             make_circle_event(right_arc, right_triple, queue, beachline);
         }
     }
@@ -153,7 +153,7 @@ fn split_arc(arc: usize, pt: Point, beachline: &mut BeachLine, dcel: &mut DCEL) 
     let ind_A2 = ind_AB + 4;
 
     let node_AB = BeachNode {
-        parent: parent,
+        parent,
         left_child: Some(ind_A1),
         right_child: Some(ind_BA),
         item: internal_AB,
@@ -189,7 +189,7 @@ fn split_arc(arc: usize, pt: Point, beachline: &mut BeachLine, dcel: &mut DCEL) 
     let node_A2 = BeachNode::make_arc(Some(ind_BA), leaf_A2);
     beachline.nodes.push(node_A2);
 
-    return ind_B;
+    ind_B
 }
 
 // return: indices of predecessor, successor, parent, 'other'
@@ -226,11 +226,11 @@ fn delete_leaf(leaf: usize, beachline: &mut BeachLine) -> (usize, usize, usize, 
     // correct the site on 'other'
     if other == pred {
         let new_other_succ = beachline.successor(other).unwrap();
-        let new_site = beachline.get_site(Some(new_other_succ)).unwrap();
+        let new_site = beachline.get_site(new_other_succ).unwrap();
         beachline.set_right_site(other, new_site);
     } else {
         let new_other_pred = beachline.predecessor(other).unwrap();
-        let new_site = beachline.get_site(Some(new_other_pred)).unwrap();
+        let new_site = beachline.get_site(new_other_pred).unwrap();
         beachline.set_left_site(other, new_site);
     }
 
@@ -244,8 +244,8 @@ fn handle_circle_event(
     beachline: &mut BeachLine,
     dcel: &mut DCEL,
 ) {
-    let left_neighbor = beachline.get_left_arc(Some(leaf)).unwrap();
-    let right_neighbor = beachline.get_right_arc(Some(leaf)).unwrap();
+    let left_neighbor = beachline.get_left_arc(leaf).unwrap();
+    let right_neighbor = beachline.get_right_arc(leaf).unwrap();
     let (pred, succ, parent, other) = delete_leaf(leaf, beachline);
 
     // removing site events involving disappearing arc
@@ -425,7 +425,7 @@ mod tests {
         let vor_diagram = voronoi(vor_points.clone(), &cell);
         let vor_polys = make_polygons(&vor_diagram);
         assert_eq!(vor_polys.len(), vor_points.len());
-        let voronoi_area: f64 = vor_polys.iter().map(polygon_area).sum();
+        let voronoi_area: f64 = vor_polys.iter().map(|v| polygon_area(v)).sum();
         assert_eq!(voronoi_area, cell.area());
     }
 
@@ -443,7 +443,7 @@ mod tests {
             let vor_polys = make_polygons(&vor_diagram);
             assert_eq!(vor_polys.len(), points.len());
 
-            let voronoi_area: f64 = vor_polys.iter().map(polygon_area).sum();
+            let voronoi_area: f64 = vor_polys.iter().map(|v| polygon_area(v)).sum();
             assert_abs_diff_eq!(voronoi_area, cell.area(), epsilon = 4.*std::f64::EPSILON);
         }
     }

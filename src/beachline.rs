@@ -46,17 +46,17 @@ impl BeachNode {
             parent: None,
             left_child: None,
             right_child: None,
-            item: item,
+            item,
         }
     }
 
     pub fn make_arc(parent: Option<usize>, item: BeachItem) -> Self {
         if let BeachItem::Leaf(_) = item {
             BeachNode {
-                parent: parent,
+                parent,
                 left_child: None,
                 right_child: None,
-                item: item,
+                item,
             }
         } else {
             panic!("make_arc can only make Leaf items!");
@@ -95,10 +95,7 @@ impl fmt::Debug for Arc {
 
 impl Arc {
     pub fn new(site: Point, site_event: Option<usize>) -> Self {
-        Arc {
-            site: site,
-            site_event: site_event,
-        }
+        Arc { site, site_event }
     }
 }
 
@@ -121,9 +118,9 @@ impl fmt::Debug for BreakPoint {
 impl BreakPoint {
     pub fn new(left_site: Point, right_site: Point, halfedge: usize) -> Self {
         BreakPoint {
-            left_site: left_site,
-            right_site: right_site,
-            halfedge: halfedge,
+            left_site,
+            right_site,
+            halfedge,
         }
     }
 }
@@ -216,80 +213,57 @@ impl BeachLine {
             current_node = current_parent;
             current_parent = self.nodes[current_parent.unwrap()].parent;
         }
-        return current_parent;
+        current_parent
     }
 
-    pub fn get_left_arc(&self, node: Option<usize>) -> Option<usize> {
-        node.and_then(|node| self.predecessor(node))
+    pub fn get_left_arc(&self, node: usize) -> Option<usize> {
+        self.predecessor(node)
             .and_then(|left| self.predecessor(left))
     }
 
-    pub fn get_right_arc(&self, node: Option<usize>) -> Option<usize> {
-        node.and_then(|node| self.successor(node))
-            .and_then(|right| self.successor(right))
+    pub fn get_right_arc(&self, node: usize) -> Option<usize> {
+        self.successor(node).and_then(|right| self.successor(right))
     }
 
     pub fn get_leftward_triple(&self, node: usize) -> Option<TripleSite> {
-        let left_arc = self.get_left_arc(Some(node));
-        let left_left_arc = self.get_left_arc(left_arc);
+        let left_arc = self.get_left_arc(node)?;
+        let left_left_arc = self.get_left_arc(left_arc)?;
 
-        let this_site = self.get_site(Some(node));
-        let left_site = self.get_site(left_arc);
-        let left_left_site = self.get_site(left_left_arc);
+        let this_site = self.get_site(node)?;
+        let left_site = self.get_site(left_arc)?;
+        let left_left_site = self.get_site(left_left_arc)?;
 
-        if this_site.is_some() && left_site.is_some() && left_left_site.is_some() {
-            Some((
-                left_left_site.unwrap(),
-                left_site.unwrap(),
-                this_site.unwrap(),
-            ))
-        } else {
-            None
-        }
+        Some((left_left_site, left_site, this_site))
     }
 
     pub fn get_rightward_triple(&self, node: usize) -> Option<TripleSite> {
-        let right_arc = self.get_right_arc(Some(node));
-        let right_right_arc = self.get_right_arc(right_arc);
+        let right_arc = self.get_right_arc(node)?;
+        let right_right_arc = self.get_right_arc(right_arc)?;
 
-        let this_site = self.get_site(Some(node));
-        let right_site = self.get_site(right_arc);
-        let right_right_site = self.get_site(right_right_arc);
+        let this_site = self.get_site(node)?;
+        let right_site = self.get_site(right_arc)?;
+        let right_right_site = self.get_site(right_right_arc)?;
 
-        if this_site.is_some() && right_site.is_some() && right_right_site.is_some() {
-            Some((
-                this_site.unwrap(),
-                right_site.unwrap(),
-                right_right_site.unwrap(),
-            ))
-        } else {
-            None
-        }
+        Some((this_site, right_site, right_right_site))
     }
 
     pub fn get_centered_triple(&self, node: usize) -> Option<TripleSite> {
-        let right_arc = self.get_right_arc(Some(node));
-        let left_arc = self.get_left_arc(Some(node));
+        let right_arc = self.get_right_arc(node)?;
+        let left_arc = self.get_left_arc(node)?;
 
-        let this_site = self.get_site(Some(node));
-        let right_site = self.get_site(right_arc);
-        let left_site = self.get_site(left_arc);
+        let this_site = self.get_site(node)?;
+        let right_site = self.get_site(right_arc)?;
+        let left_site = self.get_site(left_arc)?;
 
-        if this_site.is_some() && right_site.is_some() && left_site.is_some() {
-            Some((left_site.unwrap(), this_site.unwrap(), right_site.unwrap()))
+        Some((left_site, this_site, right_site))
+    }
+
+    pub fn get_site(&self, node: usize) -> Option<Point> {
+        if let BeachItem::Leaf(ref arc) = self.nodes[node].item {
+            Some(arc.site)
         } else {
             None
         }
-    }
-
-    pub fn get_site(&self, node: Option<usize>) -> Option<Point> {
-        node.and_then(|node| {
-            if let BeachItem::Leaf(ref arc) = self.nodes[node].item {
-                Some(arc.site)
-            } else {
-                None
-            }
-        })
     }
 
     pub fn set_right_site(&mut self, node: usize, site: Point) {

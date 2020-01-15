@@ -4,7 +4,7 @@ use crate::point::Point;
 use crate::voronoi::voronoi;
 
 /// Computes the centroid of a polygon.
-pub fn polygon_centroid(pts: &Vec<Point>) -> Point {
+pub fn polygon_centroid(pts: &[Point]) -> Point {
     let mut pt_sum = Point::new(0.0, 0.0);
     for pt in pts {
         pt_sum = *pt + pt_sum;
@@ -18,5 +18,8 @@ pub fn polygon_centroid(pts: &Vec<Point>) -> Point {
 pub fn lloyd_relaxation(pts: Vec<Point>, boxsize: &Cell) -> Vec<Point> {
     let voronoi = voronoi(pts, boxsize);
     let faces = make_polygons(&voronoi);
-    faces.iter().map(polygon_centroid).collect::<Vec<Point>>()
+    faces
+        .iter()
+        .map(|v| polygon_centroid(v))
+        .collect::<Vec<Point>>()
 }

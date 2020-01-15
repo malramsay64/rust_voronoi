@@ -59,6 +59,7 @@ impl Cell {
             .zip(self.boundary.iter().cycle().skip(1))
     }
 
+    #[cfg(test)]
     /// Find the area of the cell
     pub(crate) fn area(&self) -> f64 {
         self.sides()

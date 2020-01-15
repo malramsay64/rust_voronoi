@@ -19,7 +19,7 @@ pub struct DCEL {
 
 impl DCEL {
     /// Construct an empty DCEL
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         DCEL {
             vertices: vec![],
             halfedges: vec![],
@@ -29,8 +29,8 @@ impl DCEL {
 
     /// Add two halfedges that are twins
     pub fn add_twins(&mut self) -> (usize, usize) {
-        let mut he1 = HalfEdge::new();
-        let mut he2 = HalfEdge::new();
+        let mut he1 = HalfEdge::default();
+        let mut he2 = HalfEdge::default();
 
         let start_index = self.halfedges.len();
         he1.twin = start_index + 1;
@@ -43,7 +43,7 @@ impl DCEL {
     /// Get the origin of a halfedge by index
     pub fn get_origin(&self, edge: usize) -> Point {
         let origin_ind = self.halfedges[edge].origin;
-        return self.vertices[origin_ind].coordinates;
+        self.vertices[origin_ind].coordinates
     }
 
     /// Set the previous edge of all halfedges
@@ -96,7 +96,7 @@ impl DCEL {
                 break;
             }
         }
-        return result;
+        result
     }
 
     /// Remove a vertex and all attached halfedges.
@@ -185,7 +185,7 @@ impl fmt::Debug for HalfEdge {
 
 impl HalfEdge {
     /// Construct an empty halfedge
-    pub fn new() -> Self {
+    pub fn default() -> Self {
         HalfEdge {
             origin: NIL,
             twin: NIL,
@@ -376,20 +376,22 @@ fn get_line_intersections(seg: Segment, dcel: &DCEL) -> Vec<(Point, usize)> {
         seen_halfedges[index] = true;
         seen_halfedges[twin] = true;
     }
-    return intersections;
+    intersections
 }
 
 /// Constructs the line segments of the Voronoi diagram.
 pub fn make_line_segments(dcel: &DCEL) -> Vec<Segment> {
     let mut result = vec![];
     for halfedge in &dcel.halfedges {
-        if halfedge.origin != NIL && halfedge.next != NIL && halfedge.alive {
-            if dcel.halfedges[halfedge.next].origin != NIL {
-                result.push([
-                    dcel.vertices[halfedge.origin].coordinates,
-                    dcel.get_origin(halfedge.next),
-                ])
-            }
+        if halfedge.origin != NIL
+            && halfedge.next != NIL
+            && halfedge.alive
+            && dcel.halfedges[halfedge.next].origin != NIL
+        {
+            result.push([
+                dcel.vertices[halfedge.origin].coordinates,
+                dcel.get_origin(halfedge.next),
+            ])
         }
     }
     result
@@ -419,5 +421,5 @@ pub fn make_polygons(dcel: &DCEL) -> Vec<Vec<Point>> {
     result.sort_by(|a, b| a.len().cmp(&b.len()));
     result.pop();
 
-    return result;
+    result
 }
